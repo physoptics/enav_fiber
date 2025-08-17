@@ -41,17 +41,13 @@ def paste_image(img: np.ndarray,
     return canvas
 
 
-
-
-
-
 mask = create_circle(1920, 1080, R=300, shiftx=-480, shifty=-20)
 
 
 
 
 # suppose x_train is shape (N, 28, 28), dtype float32 in [0,1]
-N = 30
+N = 1000
 
 x_train_resized = np.zeros((N, 450, 450), dtype=x_train.dtype)
 out = np.zeros((N, 144, 144), dtype=np.uint32)
@@ -69,13 +65,13 @@ for i in range(N):
     cv2.moveWindow("SLM", 1920, 0)  # move to monitor 2 (adjust as needed)
     if cv2.waitKey(150) & 0xFF == 27:  # 3000 ms
         break
-    out[i] = camera_capture(cam)
-    # p = camera_capture(cam)
-    # plt.figure()
-    # arr_scaled = (p.astype(np.float32) / p.max()) * 255.0
-    # plt.imshow(arr_scaled.astype(np.uint8), cmap='gray', vmin=0, vmax=255)
-    # plt.axis('off')
-    # plt.show()
+    # out[i] = camera_capture(cam)
+    p = camera_capture(cam)
+    plt.figure()
+
+    plt.imshow(p)
+    plt.axis('off')
+    plt.show()
 
 
 

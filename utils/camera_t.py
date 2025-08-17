@@ -25,13 +25,12 @@ def camera_setup():
     # cam.PixelFormat.Set(Defines.ColorMode.Mono8)
     cam.PixelFormat.Set(Defines.ColorMode.RGBA8Packed)
     cam.Gain.Hardware.Boost.SetEnable(False)
-    cam.Timing.Exposure.Set(10)
+    cam.Timing.Exposure.Set(70)
+    cam.Timing.Framerate.Set(2.5)
+    cam.Trigger.Set(Defines.TriggerMode.Software)
     cam.Gamma.Software.Set(0)
-    pos_x, pos_y = 756, 580
-    aoi_width, aoi_height = 144, 144
-    # Set AOI
-    ret = cam.Size.AOI.Set(pos_x, pos_y, aoi_width, aoi_height)
-    # Or: ret = cam.Size.AOI.Set(Rectangle(pos_x, pos_y, aoi_width, aoi_height))
+    ret = cam.Size.AOI.Set(756, 580, 144, 144)
+
 
     if not ok(ret):
         cam.Exit()
@@ -59,11 +58,10 @@ def camera_capture(cam):
         cam.Exit()
         raise RuntimeError(f"CopyToArray failed: {ret}")
 
-
     data = np.frombuffer(arr, dtype=np.uint32)
     rgba = data.reshape(h, w,4)
     print(rgba.max())
-    return rgba[:,:,2]
+    return rgba[:,:,0]
 
 
 
