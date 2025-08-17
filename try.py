@@ -6,11 +6,11 @@ from utils.boldoc  import *
 from utils.display  import *
 from utils.camera_t import *
 import matplotlib.pyplot as plt
-x_train = np.load('data/x_train.npy')
-y_train = np.load('data/y_train.npy')
+x_train = np.load('../data/x_train.npy')
+y_train = np.load('../data/y_train.npy')
 
-x_test = np.load('data/x_test.npy')
-y_test = np.load('data/y_test.npy')
+x_test = np.load('../data/x_test.npy')
+y_test = np.load('../data/y_test.npy')
 
 cam = camera_setup()
 
