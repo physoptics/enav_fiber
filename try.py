@@ -48,7 +48,7 @@ mask = create_circle(1920, 1080, R=300, shiftx=-480, shifty=-20)
 
 # suppose x_train is shape (N, 28, 28), dtype float32 in [0,1]
 N = 1000
-for j in range(55):
+for j in range(60):
     save_y = np.zeros((N,1), dtype=y_train.dtype)
     x_train_resized = np.zeros((N, 450, 450), dtype=x_train.dtype)
     out = np.zeros((N, 144, 144), dtype=np.uint32)
