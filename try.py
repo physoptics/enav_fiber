@@ -3,6 +3,7 @@ import cv2
 import time
 from utils.circ  import *
 from utils.boldoc  import *
+from utils.dup  import *
 from utils.display  import *
 from utils.camera_t import *
 import matplotlib.pyplot as plt
@@ -16,6 +17,10 @@ cam = camera_setup()
 
 t0 = time.perf_counter()
 
+
+w = weight = np.ones((336, 336), dtype=x_train.dtype)
+w[0:42,210:]= w[0:42,:126]=w[294:,210:]=w[294:,:126]= 0
+w[210:,0:42] = w[:126,0:42] = w[210:,294:] = w[:126,294:]=0
 
 
 
@@ -48,35 +53,33 @@ mask = create_circle(1920, 1080, R=300, shiftx=-480, shifty=-20)
 
 # suppose x_train is shape (N, 28, 28), dtype float32 in [0,1]
 N = 1000
-for j in range(60):
-    save_y = np.zeros((N,1), dtype=y_train.dtype)
-    x_train_resized = np.zeros((N, 450, 450), dtype=x_train.dtype)
-    out = np.zeros((N, 144, 144), dtype=np.uint32)
-    for i in range(N):
-        # cv2.resize expects H×W in pixels, and returns same dtype
-        save_y[i] = y_train[1000*j+i]
-        x_train_resized[i] = cv2.resize(
-            x_train[1000*j+i],
-            (450, 450),
-            interpolation=cv2.INTER_CUBIC
-        )
-    for i in range(N):
-        big = paste_image(x_train_resized[i], 1920, 1080, x_offset=1215, y_offset=315, fill_value=0)
-        M = slm_bolduc_create_mask(big, mask)
-        cv2.imshow("SLM", M)
-        cv2.moveWindow("SLM", 1920, 0)  # move to monitor 2 (adjust as needed)
-        if cv2.waitKey(150) & 0xFF == 27:
-            break
-        out[i] = camera_capture(cam)
+for k in range(6):
+    for j in range(60):
+
+        x_train_resized = np.zeros((N, 336, 336), dtype=x_train.dtype)
+        out = np.zeros((N, 144, 144), dtype=np.uint32)
+        for i in range(N):
+            random = np.random.rand(144)
+            # cv2.resize expects H×W in pixels, and returns same dtype
+
+            x_train_resized[i] =duplicate( x_train[1000*j+ i], w, random)
+        for i in range(N):
+            big = paste_image(x_train_resized[i], 1920, 1080, x_offset=1272, y_offset=372, fill_value=0)
+            M = slm_bolduc_create_mask(big, mask)
+            cv2.imshow("SLM", M)
+            cv2.moveWindow("SLM", 1920, 0)  # move to monitor 2 (adjust as needed)
+            if cv2.waitKey(150) & 0xFF == 27:
+                break
+            out[i] = camera_capture(cam)
 
 
-    save_path = r"D:\fiber_data\enav"
+        save_path = r"D:\fiber_data\enav"
 
-    # os.makedirs(save_path, exist_ok=True)
-    # np.save(os.path.join(save_path, "fiber_array.npy"),out)
+        # os.makedirs(save_path, exist_ok=True)
+        # np.save(os.path.join(save_path, "fiber_array.npy"),out)
 
-    filename = os.path.join(save_path, f"fiber_pair_label_{j:03d}.npz")
-    np.savez_compressed(filename, arr1=save_y, arr2=out)
+        filename = os.path.join(save_path, f"fiber_pair_label_{k:03d}_{j:03d}.npz")
+        np.savez_compressed(filename, arr1= x_train_resized, arr2=out)
 
 
 cam.Exit()
