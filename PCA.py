@@ -8,22 +8,16 @@ from sklearn.preprocessing import StandardScaler
 # ==============================
 # Replace these with your actual np arrays
 # X: (n, 28, 28) or (n, 784), y: (n,)
-X = np.load('../data/x_train.npy')
-Y = np.load('../data/y_train.npy')
+# X = np.load('../data/x_train.npy')
+# Y = np.load('../data/y_train.npy')
+X = np.load('../mnist/x_train.npy')
+Y = np.load('../mnist/y_train.npy')
 
-
-assert X.ndim in (2, 3), "X must be (n,784) or (n,28,28)"
-if X.ndim == 3:
-    H, W = X.shape[1], X.shape[2]
-    assert H == 28 and W == 28, "Expected 28x28 MNIST"
-    X_flat = X.reshape(len(X), -1)
-else:
-    X_flat = X
-    assert X_flat.shape[1] == 28*28, "Expected 784 features for MNIST"
-
-# Optional: convert to float and normalize scale
+X_flat = X.reshape(len(X), -1)
 X_flat = X_flat.astype(np.float32)
 
+one_hot_Y = np.eye(10)[Y]
+print(one_hot_Y.shape)
 # ==============================
 # 2) Standardize features
 #    (mean 0 / std 1 per pixel)
@@ -41,36 +35,50 @@ X_pca = pca.fit_transform(X_std)   # scores: (n, n_components)
 components = pca.components_       # loadings: (n_components, 784)
 explained = pca.explained_variance_ratio_  # (n_components,)
 
-print(f"Total explained variance: {explained.sum():.4f}")
+P = pca.components_[:200]
 
-# ==============================
-# 4) Scree + cumulative EV
-# ==============================
+VT = P @ X_std.T
+V = VT.T
+VTV = VT @ V
+inv_VTV = np.linalg.inv(VTV)
+M = (one_hot_Y.T @ V)@ (inv_VTV)
 
-cum_exp = np.cumsum(explained)
-plt.figure(figsize=(6,4))
-plt.plot(explained + 1e-12, lw=1)   # per-component EVR (add tiny eps to avoid log(0))
-plt.plot(cum_exp, lw=1)             # cumulative EVR ~ near 1 (usually keep linear)
-plt.yscale('log')                   # <-- log scale on y
-plt.title("Explained Variance (log y)")
-plt.xlabel("Component index")
-plt.ylabel("Variance ratio (log)")
-plt.legend(["Per-component", "Cumulative"])
-plt.tight_layout()
+es_y = (M @ VT).T
+max_indices = np.argmax(es_y, axis=1)
+print(es_y[10])
+es_y = np.zeros(es_y.shape)
+es_y[np.arange(len(es_y)), max_indices] = 1.0
+print(es_y[10])
+error_y = one_hot_Y - es_y
+error_y = np.abs(error_y)
+error_y = np.sum(error_y, axis=1)
+error_y = np.sum(error_y, axis=0)
+error_y = error_y/120000
+print(error_y)
 
-# plt.plot(explained, lw=1)
-# plt.plot(cum_exp, lw=1)
-# plt.title("PCA Explained Variance (per PC) and Cumulative")
-# plt.xlabel("Component index")
-# plt.ylabel("Variance ratio")
-# plt.legend(["Per-component", "Cumulative"])
-# plt.tight_layout()
+
+
+
+
+
+
+
+
+
+
 
 # =========================================
 # 5) Visualize the first K eigen-digits
-#    (principal component vectors as images)
-# =========================================
+
 def show_components_grid(components, K=50, rows=5, cols=10):
+    plt.figure(figsize=(6, 4))
+    plt.plot(explained + 1e-12, lw=1)  # per-component EVR (add tiny eps to avoid log(0))
+    plt.yscale('log')  # <-- log scale on y
+    plt.title("Explained Variance (log y)")
+    plt.xlabel("Component index")
+    plt.ylabel("Variance ratio (log)")
+
+    plt.tight_layout()
     K = min(K, components.shape[0])
     fig, axes = plt.subplots(rows, cols, figsize=(1.8*cols, 1.8*rows))
     for i in range(rows*cols):
@@ -85,54 +93,9 @@ def show_components_grid(components, K=50, rows=5, cols=10):
     fig.suptitle(f"Top {K} principal components (eigen-digits)", y=0.92)
     plt.tight_layout()
 
-show_components_grid(components, K=50, rows=5, cols=10)
+# show_components_grid(components, K=50, rows=5, cols=10)
 
-# =========================================
-# 6) Scatter in PC1–PC2 (color by label)
-#    Downsample if you have many points
-# =========================================
-def scatter_pc12(X_pca, y, max_points=10000):
-    n = len(X_pca)
-    if n > max_points:
-        idx = np.random.default_rng(0).choice(n, size=max_points, replace=False)
-    else:
-        idx = np.arange(n)
-    Z = X_pca[idx, :2]
-    labels = y[idx]
-    plt.figure(figsize=(6,6))
-    # Create a simple palette: digits 0..9
-    # (If you prefer default colors, you can skip setting c explicitly)
-    plt.scatter(Z[:,0], Z[:,1], s=6, c=labels, alpha=0.7)
-    plt.xlabel("PC1")
-    plt.ylabel("PC2")
-    plt.title("MNIST in PCA space (PC1 vs PC2)")
-    plt.tight_layout()
 
-scatter_pc12(X_pca, Y, max_points=10000)
 
-# =========================================
-# 7) (Optional) 3D scatter PC1–PC3
-# =========================================
-try:
-    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-    def scatter_pc123(X_pca, y, max_points=6000):
-        n = len(X_pca)
-        if n > max_points:
-            idx = np.random.default_rng(0).choice(n, size=max_points, replace=False)
-        else:
-            idx = np.arange(n)
-        Z = X_pca[idx, :3]
-        labels = y[idx]
-        fig = plt.figure(figsize=(7,6))
-        ax = fig.add_subplot(111, projection='3d')
-        sc = ax.scatter(Z[:,0], Z[:,1], Z[:,2], s=6, c=labels, alpha=0.75)
-        ax.set_xlabel("PC1")
-        ax.set_ylabel("PC2")
-        ax.set_zlabel("PC3")
-        ax.set_title("MNIST in PCA space (3D)")
-        plt.tight_layout()
-    scatter_pc123(X_pca, y)
-except Exception as e:
-    print("3D scatter skipped:", e)
 
 plt.show()
