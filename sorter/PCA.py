@@ -10,8 +10,8 @@ from sklearn.preprocessing import StandardScaler
 # X: (n, 28, 28) or (n, 784), y: (n,)
 # X = np.load('../data/x_train.npy')
 # Y = np.load('../data/y_train.npy')
-X = np.load('../mnist/x_train.npy')
-Y = np.load('../mnist/y_train.npy')
+X = np.load('../../mnist/x_train.npy')
+Y = np.load('../../mnist/y_train.npy')
 
 X_flat = X.reshape(len(X), -1)
 X_flat = X_flat.astype(np.float32)
@@ -30,32 +30,46 @@ X_std = scaler.fit_transform(X_flat)
 #    For MNIST: n_features=784
 # ==============================
 n_features = X_std.shape[1]
-pca = PCA(n_components=n_features, svd_solver='randomized', random_state=0)
+pca = PCA(n_components=n_features, svd_solver='full')
 X_pca = pca.fit_transform(X_std)   # scores: (n, n_components)
 components = pca.components_       # loadings: (n_components, 784)
 explained = pca.explained_variance_ratio_  # (n_components,)
 
-P = pca.components_[:200]
+s = []
+for i in range(77):
+    k = 10 * (i+1)
+    P = pca.components_[:k]
 
-VT = P @ X_std.T
-V = VT.T
-VTV = VT @ V
-inv_VTV = np.linalg.inv(VTV)
-M = (one_hot_Y.T @ V)@ (inv_VTV)
+    VT = P @ X_std.T
+    V = VT.T
+    VTV = VT @ V
+    inv_VTV = np.linalg.inv(VTV)
+    M = (one_hot_Y.T @ V)@ (inv_VTV)
 
-es_y = (M @ VT).T
-max_indices = np.argmax(es_y, axis=1)
-print(es_y[10])
-es_y = np.zeros(es_y.shape)
-es_y[np.arange(len(es_y)), max_indices] = 1.0
-print(es_y[10])
-error_y = one_hot_Y - es_y
-error_y = np.abs(error_y)
-error_y = np.sum(error_y, axis=1)
-error_y = np.sum(error_y, axis=0)
-error_y = error_y/120000
-print(error_y)
+    es_y = (M @ VT).T
+    max_indices = np.argmax(es_y, axis=1)
+    es_y = np.zeros(es_y.shape)
+    es_y[np.arange(len(es_y)), max_indices] = 1.0
+    error_y = one_hot_Y - es_y
+    error_y = np.abs(error_y)
+    error_y = np.sum(error_y, axis=1)
+    error_y = np.sum(error_y, axis=0)
+    error_y = error_y/120000
+    s.append((1-error_y))
+    print(error_y)
 
+plt.figure(figsize=(10, 6))  # Optional: make the figure larger
+x_values = range(10, 780, 10)
+plt.plot(x_values, s)
+
+
+# Optional: Add labels and title
+plt.title("success as function of vectors")
+plt.xlabel("number of PCA vectors")
+plt.ylabel("success")
+plt.grid(True) # Optional: add a grid for easier reading
+
+plt.show()
 
 
 
