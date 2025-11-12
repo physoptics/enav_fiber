@@ -16,7 +16,19 @@ X_std = scaler.fit_transform(X_flat)
 one_hot_Y = np.eye(10)[Y]
 
 M = linear_modes(X_std, one_hot_Y)
+M2, p = PPCA(X_std, one_hot_Y,300)
+# mm = M2[9].reshape(28,28)
 
+mask = create_mask(M, X_std[0], 450)
+
+plt.figure()
+# Use cmap='gray' for grayscale images like MNIST
+
+plt.imshow(np.real(mask).astype(float), cmap='gray')
+# plt.imshow(mm, cmap='gray')
+plt.title("2D Array Plot (Image)")
+plt.colorbar()  # Adds a color bar to show the value scale
+plt.show()
 
 
 
