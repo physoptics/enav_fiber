@@ -55,14 +55,15 @@ mask = create_circle(1920, 1080, R=300, shiftx=-480, shifty=-20)
 N = 1000
 for k in range(6):
     for j in range(60):
-
+        x_save = np.zeros((N, 28, 28), dtype=x_train.dtype)
         x_train_resized = np.zeros((N, 336, 336), dtype=x_train.dtype)
+        rand = np.zeros((N,144))
         out = np.zeros((N, 144, 144), dtype=np.uint32)
         for i in range(N):
-            random = np.random.rand(144)
+            rand[i] = np.random.rand(144)
             # cv2.resize expects H×W in pixels, and returns same dtype
-
-            x_train_resized[i] =duplicate( x_train[1000*j+ i], w, random)
+            x_save[i] = x_train[1000*j+ i]
+            x_train_resized[i] =duplicate( x_train[1000*j+ i], w, rand[i])
         for i in range(N):
             big = paste_image(x_train_resized[i], 1920, 1080, x_offset=1272, y_offset=372, fill_value=0)
             M = slm_bolduc_create_mask(big, mask)
@@ -78,8 +79,8 @@ for k in range(6):
         # os.makedirs(save_path, exist_ok=True)
         # np.save(os.path.join(save_path, "fiber_array.npy"),out)
 
-        filename = os.path.join(save_path, f"fiber_pair_label_{k:03d}_{j:03d}.npz")
-        np.savez_compressed(filename, arr1= x_train_resized, arr2=out)
+        filename = os.path.join(save_path, f"fiber_pair_label_{(k+3):03d}_{j:03d}.npz")
+        np.savez_compressed(filename, weights= rand, x = x_save,  output =out)
 
 
 cam.Exit()
