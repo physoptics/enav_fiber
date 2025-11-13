@@ -60,8 +60,8 @@ def create_mask(modes, digit, N):
         m = modes[i].reshape(28, 28)
         alpha = int((N/10)*i)
         exp = phase(N,alpha)
-        mm = cv2.resize(m, new_size, interpolation=cv2.INTER_LINEAR)
-        mask += (w[0]*exp)
+        # mm = cv2.resize(m, new_size, interpolation=cv2.INTER_LINEAR)
+        mask += (w[i]*exp)
     mask = mask / np.max(np.abs(mask))
     return mask
 

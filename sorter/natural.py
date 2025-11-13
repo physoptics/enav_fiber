@@ -20,17 +20,32 @@ M = linear_modes(X_std, one_hot_Y)
 # M2, p = PPCA(X_std, one_hot_Y,300)
 # mm = M2[9].reshape(28,28)
 
-############################mask creator##################################
-mask = create_mask(M, X_std, 450)
 
-plt.figure()
+
+
+############################mask creator##################################
+mask = create_mask(M, X_std[99], 450)
+
+plt.imshow(mask.real)
+plt.show()
+print(Y[9])
+
+Iout = np.abs(np.fft.fftshift(np.fft.fft2(mask))**2)
+plt.imshow(Iout)
+plt.show()
+
+diag = np.diag(Iout)
+plt.plot(diag)
+plt.show()
+
+# plt.figure()
 # Use cmap='gray' for grayscale images like MNIST
 
-plt.imshow(np.real(mask).astype(float), cmap='gray')
+# plt.imshow(np.real(mask).astype(float), cmap='gray')
 # plt.imshow(mm, cmap='gray')
-plt.title("2D Array Plot (Image)")
-plt.colorbar()  # Adds a color bar to show the value scale
-plt.show()
+# plt.title("2D Array Plot (Image)")
+# plt.colorbar()  # Adds a color bar to show the value scale
+# plt.show()
 
 
 
