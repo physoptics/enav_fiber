@@ -15,11 +15,13 @@ scaler = StandardScaler(with_mean=True, with_std=True)
 X_std = scaler.fit_transform(X_flat)
 one_hot_Y = np.eye(10)[Y]
 
+############################mode creator##################################
 M = linear_modes(X_std, one_hot_Y)
-M2, p = PPCA(X_std, one_hot_Y,300)
+# M2, p = PPCA(X_std, one_hot_Y,300)
 # mm = M2[9].reshape(28,28)
 
-mask = create_mask(M, X_std[0], 450)
+############################mask creator##################################
+mask = create_mask(M, X_std, 450)
 
 plt.figure()
 # Use cmap='gray' for grayscale images like MNIST
