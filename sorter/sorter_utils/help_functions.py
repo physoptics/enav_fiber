@@ -66,64 +66,70 @@ def create_mask(modes, digit, N):
     return mask
 
 
+def gaussian(N=1080):
+    # 1. Create the coordinate grid
+    t = np.linspace(0, N - 1, N)  # Coordinates go from 0 to N-1
+    X, Y = np.meshgrid(t, t)
 
-def create_sorter(modes_list, img_size, phase_only=False):
+    # 2. Determine the center of the grid
 
-    # Creating the modes
-    max_x = 4
-    max_y = 4
-    x = np.linspace(-max_x, max_x, img_size)
-    y = np.linspace(-max_y, max_y, img_size)
-    X, Y = np.meshgrid(x, y)
+    center = (N - 1) / 2
+    X = X - center
+    Y = Y - center
+    Xprime=X*np.cos(-0.21)+Y*np.sin(-0.21)
+    Yprime=-X*np.sin(-0.21)+Y*np.cos(-0.21)
 
-    alpha = img_size / (2*len(modes_list)*max_x)
-    beta = img_size / (2*len(modes_list)*max_y)
+    # 3. Calculate the squared distance from the center, applying scaling factors
+    # The (X - center) and (Y - center) terms shift the peak to the middle.
+    gauss = ((Xprime ) / 712.5) ** 2 + ((Yprime ) / 612.5) ** 2
+    gauss2 = ((Xprime) / 100.0) ** 2 + ((Yprime) / 100.0) ** 2
 
-    # Creating the SLM
-    M = np.zeros((img_size, img_size), dtype=complex)
-    for i, mode in enumerate(modes_list):
-        loc = ( alpha * (i + 0.5 - len(modes_list) / 2) \
-              , beta * (i + 0.5 - len(modes_list) / 2) )
-        M += np.conjugate(mode) * np.exp(1j * np.pi * (loc[0]*X+ loc[1]*Y))
-    M /= np.max(np.abs(M))
+    # 4. Calculate the Gaussian
+    # The standard Gaussian is exp(-gauss), which is centered and peaks at 1.
+    arr = np.exp(-gauss)
+    arr2 = np.exp(-gauss2)
 
-    # Phase only
-    if phase_only:
-        real_M = np.real(M)
-        imag_M = np.imag(M)
-        phi = np.arctan2(imag_M, real_M)
-        M = np.exp(1j * phi)
+    # 5. Your function includes an inversion (1. / arr).
+    # This turns the peak into a valley (an inverted Gaussian).
+    arr = 1 / arr
+    arr = arr/ np.max(arr)
+    arr = arr*arr2
 
 
-    # Show the mask
-    plt.figure(figsize=(10, 4))
-    plt.subplot(1, 2, 1)
-    plt.imshow(np.abs(M), extent=[x.min(), x.max(), y.min(), y.max()], cmap='jet')
-    plt.title('SLM Amplitude Mask')
-    plt.colorbar()
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.subplot(1, 2, 2)
-    plt.imshow(np.angle(M), extent=[x.min(), x.max(), y.min(), y.max()], cmap='jet')
-    plt.title('SLM Phase Mask')
-    plt.colorbar()
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.show()
+    return arr2
 
-    # Display the projection
-    Iout_per_mode = []
-    plt.figure(figsize=(15, 3))
-    for i, mode in enumerate(modes_list):
-        plt.subplot(1, len(modes_list), i + 1)
-        Iout = np.abs(np.fft.fftshift(np.fft.fft2(mode * M)))**2
-        plt.imshow(Iout, extent=[-max_x, max_x, -max_y, max_y], cmap='hot')
-        # plt.title(f'Projection {modes_list[i]}')
-        # Add text
-        plt.text(0.0, -0.8*max_y, f'{i}', fontsize=12, ha='center', va='center', color='white')
-        plt.axis('off')
-        Iout_per_mode.append(Iout)
-    plt.tight_layout()
-    plt.show()
 
-    return M, Iout_per_mode
+
+
+def paste_image(img: np.ndarray,
+                big_width: int,
+                big_height: int,
+                x_offset: int,
+                y_offset: int,
+                fill_value: int = 0) -> np.ndarray:
+
+    # Determine channels
+    if img.ndim == 3:
+        channels = img.shape[2]
+        canvas = np.full((big_height, big_width, channels),
+                         fill_value, dtype=img.dtype)
+    else:
+        canvas = np.full((big_height, big_width),
+                         fill_value, dtype=img.dtype)
+
+    h, w = img.shape[:2]
+    # Paste
+    canvas[y_offset:y_offset+h, x_offset:x_offset+w, ...] = img
+    return canvas
+
+
+def center_image(img: np.ndarray,
+                big_width: int,
+                big_height: int,
+                fill_value: int = 0) -> np.ndarray:
+    h, w = img.shape
+    x_offset = (big_width - w)//2
+    y_offset = (big_height - h)//2
+    arr = np.full((big_height, big_width),fill_value, dtype=img.dtype)
+    arr[y_offset:y_offset+h, x_offset:x_offset+w] = img[:, :]
+    return arr

@@ -39,7 +39,7 @@ def arcsinc2(amp):
 def slm_bolduc_create_mask(
         phi: np.ndarray,
         amp: np.ndarray,
-        grating_period: float = 6,
+        grating_period: float = 3,
         slm_max: float = 255,
         slm_min: float = 0,
         grating_phase_on: float = 1,
